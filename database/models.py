@@ -12,7 +12,10 @@ class QuestionsORM(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     question: Mapped[str] = mapped_column(Text, nullable=False, comment='Наименование вопроса')
-    answer: Mapped[str] = mapped_column(Text, nullable=False, comment='Сопостовление вариантов с животными (кому начисляем баллы')
+    answer: Mapped[str] = mapped_column(Text,
+                                        nullable=False,
+                                        comment='Сопостовление вариантов с животными (кому начисляем баллы')
+
 
 class UsersORM(Base):
     __tablename__ = 'users'
@@ -20,3 +23,11 @@ class UsersORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, nullable=False, comment='Имя пользователя')
     result: Mapped[str] = mapped_column(Text, nullable=False, comment='Результат прохождения опроса')
+
+
+class ReviewORM(Base):
+    __tablename__ = 'review'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user: Mapped[str] = mapped_column(Text, nullable=False, comment='Имя пользователя')
+    review: Mapped[str] = mapped_column(Text, nullable=False, comment='Отзыв пользователя')
