@@ -1,3 +1,5 @@
+import os
+import logging
 from aiogram.types import Message
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
@@ -5,13 +7,13 @@ from aiogram.fsm.state import State, StatesGroup
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.filters import CommandStart
 from keyboards.inline import MenuCallBack
-from handlers.processing import get_menu_content, plus_points, show_result, get_get_main_menu, questions_page, program
+from handlers.processing import plus_points, show_result, get_get_main_menu, questions_page, program, contacts
 from database.orm_requests import *
 
 user_router = Router()
 
 
-class Requests(StatesGroup):
+class Menu(StatesGroup):
     get_feedback = State()  # Получить вопрос, который нужно добавить
 
 
@@ -23,7 +25,25 @@ async def command_start_handler(message: Message) -> None:
     :return:
     """
     text, reply_markup, image = await get_get_main_menu(message.from_user.full_name)
-    await message.answer_photo(image, caption=text, reply_markup=reply_markup)
+    if image:
+        await message.answer_photo(image, caption=text, reply_markup=reply_markup)
+    else:
+        await message.answer(text, reply_markup=reply_markup)
+
+@user_router.callback_query(MenuCallBack.filter(F.menu_name == "restart"))
+async def restart_page(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Перезапуск бота вернуться в начало
+    :param message:
+    :return:
+    """
+    await state.clear()
+    text, reply_markup, image = await get_get_main_menu(callback.message.from_user.full_name)
+    await callback.message.delete()
+    if image:
+        await callback.message.answer_photo(image, caption=text, reply_markup=reply_markup)
+    else:
+        await callback.message.answer(text, reply_markup=reply_markup)
 
 
 @user_router.callback_query(MenuCallBack.filter(F.menu_name == "quiz"))
@@ -32,7 +52,7 @@ async def quiz_page(callback: types.CallbackQuery,
                     session: AsyncSession,
                     state: FSMContext):
     """
-    Обработчик викторины
+    Обработчик викторины. Тут будем пока не закончатся вопросы по викторине
     :param callback:
     :param callback_data:
     :param session:
@@ -65,18 +85,18 @@ async def show_result_page(callback: types.CallbackQuery, state: FSMContext):
     :param state:
     :return:
     """
-    text, reply_markup, image = await show_result(state)
+    text, reply_markup, image = await show_result(state=state)
     if image:
         await callback.message.delete()
         await callback.message.answer_photo(image, caption=text, reply_markup=reply_markup)
     else:
         await callback.message.edit_text(text=text, reply_markup=reply_markup)
-    await state.clear()
 
-@user_router.message(MenuCallBack.filter(F.menu_name == "program"))
-async def about_program(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+
+@user_router.callback_query(MenuCallBack.filter(F.menu_name == "program"))
+async def about_program_page(callback: types.CallbackQuery):
     """
-    Записывает отзыв в базу
+    Показывает информацию о программе опеки
     :param message:
     :param state:
     :return:
@@ -84,9 +104,8 @@ async def about_program(callback: types.CallbackQuery, state: FSMContext, sessio
     text, reply_markup = await program()
 
     await callback.message.delete()
+    await callback.message.answer(**text.as_kwargs(), reply_markup=reply_markup)
 
-    await callback.message.answer('Спасибо! Ваш отзыв сохранен 🙂')
-    await state.clear()
 
 @user_router.callback_query(MenuCallBack.filter(F.menu_name == "feedback"))
 async def feedback_page(message: Message, state: FSMContext):
@@ -97,13 +116,13 @@ async def feedback_page(message: Message, state: FSMContext):
     :return:
     """
     await message.answer('Пожалуйста, напишите ваши впечатления в текстовом поле 😊:')
-    await state.set_state(Requests.get_feedback.state)
+    await state.set_state(Menu.get_feedback.state)
 
 
-@user_router.message(Requests.get_feedback)
+@user_router.message(Menu.get_feedback)
 async def write_feedback(message: Message, state: FSMContext, session: AsyncSession):
     """
-    Записывает отзыв в базу
+    Записывает отзыв в базу данных
     :param message:
     :param state:
     :return:
@@ -115,23 +134,35 @@ async def write_feedback(message: Message, state: FSMContext, session: AsyncSess
     await state.clear()
 
 
-@user_router.callback_query(MenuCallBack.filter())
-async def user_menu(callback: types.CallbackQuery,
-                    callback_data: MenuCallBack,
-                    session: AsyncSession,
-                    state: FSMContext):
+@user_router.callback_query(MenuCallBack.filter(F.menu_name == "manager_contact"))
+async def contact_page(callback: types.CallbackQuery):
     """
+    Связаться с сотрудником для получения подробной информации
+    :param message:
+    :param state:
+    :return:
+    """
+    text, reply_markup = await contacts()
+    try:
+        if os.getenv('MANAGER_TELEGRAM_ID'):
+            await callback.message.copy_to(chat_id=int(os.getenv('MANAGER_TELEGRAM_ID')))
+    except Exception as e:
+        logging.exception(e)
+        logging.warning('Не удалось переслать сообщение менеджеру')
 
+    await callback.message.delete()
+    await callback.message.answer(text=text, reply_markup=reply_markup)
+
+
+@user_router.callback_query(MenuCallBack.filter())
+async def user_menu(callback: types.CallbackQuery):
+    """
+    Что-то непонятное (введенный текст, картинка...)
     :param callback:
     :param callback_data:
     :param session:
     :return:
     """
-
-    text, reply_markup = await get_menu_content(
-        session=session,
-        menu_name=callback_data.menu_name,
-        question_id=callback_data.question_id,
-        state=state)
-
-    await callback.message.answer(text=text, reply_markup=reply_markup)
+    await callback.message.answer(text='Не могу понять, что ты хочешь сделать :( '
+                                       'Пожалуйста, пользуйс только кнопками и инструкциями, которые'
+                                       'я тебе предлагая.')

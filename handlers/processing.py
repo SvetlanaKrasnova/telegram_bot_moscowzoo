@@ -1,24 +1,26 @@
 import os
 import json
 import random
-from typing import Optional
 from aiogram.types import BufferedInputFile
 from aiogram.fsm.context import FSMContext
-from keyboards.inline import get_user_main_btns, get_user_question_btns, get_result_btns, get_program_btns
+from aiogram.utils.formatting import Bold, as_list, as_section
+from keyboards.inline import get_user_main_btns, get_user_question_btns, get_result_btns, get_program_btns, get_contacts_btns
 from database.orm_requests import *
 
 
 async def get_get_main_menu(full_name):
-    text = f"Привет, {full_name} 🤗!\nРад тебя видетья)\n" \
-           "Предлагаю тебе пройти викторину \"Какое у вас тотемное животное\"\n" \
-           "А потом я тебе кое-что расскажу😉.\n\n" \
+    text = f"Привет, {full_name} 🤗!\nРад тебя видеть! 🙂\n" \
+           "Предлагаю тебе пройти викторину \"Какое у вас тотемное животное\".\n" \
+           "А потом узнать кое-что интересное и важное😉.\n\n" \
            "Жду тебя на финише!❤️"
 
     kbds = get_user_main_btns()
-
-    with open(os.path.join(os.getcwd(), "files/image_start.png"), "rb") as image_from_buffer:
-        image = BufferedInputFile(image_from_buffer.read(),
-                                  filename="image_start.png")
+    image = None
+    image_start_path = os.path.join(os.getcwd(), "files/image_start.png")
+    if os.path.exists(image_start_path):
+        with open(image_start_path, "rb") as image_from_buffer:
+            image = BufferedInputFile(image_from_buffer.read(),
+                                      filename="image_start.png")
 
     return text, kbds, image
 
@@ -32,7 +34,8 @@ async def questions_page(session: AsyncSession, question_id, state=None):
         all_questions = await get_questions(session)
 
         # Теперь выбираем случайные, чтоб было интереснее (если, конечно в базе их больше, чем нужно)
-        if all_questions.__len__() == int(os.getenv('COL_QUESTIONS')):
+        if all_questions.__len__() == int(os.getenv('COL_QUESTIONS')) or \
+                all_questions.__len__() < int(os.getenv('COL_QUESTIONS')):
             questions = all_questions
         else:
             questions = random.sample(all_questions, int(os.getenv('COL_QUESTIONS')))
@@ -89,7 +92,7 @@ async def show_result(state: FSMContext):
             max_value, result = v, k
 
     path_file, image = None, None
-    text = f'Твой результат: "{result}"\nПосмотри какой хорошенький зверёк!😊'
+    text = f'Твоё тотемное животное: "{result}"\nПосмотри какой хорошенький зверёк!😊'
     dir_foto = os.path.join(os.getcwd(), f"modul_quiz/foto")
     for _f in os.listdir(dir_foto):
         if _f.lower().strip().__contains__(result.lower().strip()):
@@ -99,7 +102,7 @@ async def show_result(state: FSMContext):
         with open(path_file, "rb") as image_from_buffer:
             image = BufferedInputFile(image_from_buffer.read(), filename=f"{result}")
 
-    kbds = get_result_btns()
+    kbds = get_result_btns(result_quiz=text)
 
     return text, kbds, image
 
@@ -109,30 +112,30 @@ async def program():
     О програме опеки
     :return:
     """
-    text = """
-    Возьмите животное под опеку!\n\n
+    text = as_list(
+        as_section(Bold("Возьмите животное под опеку!")),
+        as_section("Опека над животным из Московского зоопарка помогает сохраненить биоразнообразия "
+                   f"Земли и, конечно,", (Bold("это реальная помощь животным Московского зоопарка!")),
+                   "Благодаря вам мы можем улучшить условия содержания наших обитателей. 🦊"),
+        as_section("Участвуйте в жизни Московского зоопарка, почувствуйте причастность к делу сохранения природы. 🌳",
+                   "Станте опекуном и поделитесь любовью и заботой со своим подопечным.\n"),
+        as_section(f"Опекать – значит помогать любимым животным ❤️."))
 
-    Опека над животным из Московского зоопарка помогает сохраненить биоразнообразия 
-    Земли и, конечно, **это реальная помощь животным Московского зоопарка!**
-    Благодаря вам мы можем улучшить условия содержания наших обитателей.
-    Участвуйте в жизни Московского зоопарка, почувствуйте причастность к делу сохранения природы. 
-    Станте опекуном и поделитесь любовью и заботой со своим подопечным
-    
-    Опекать – значит помогать любимым животным.
-        """
     kbds = get_program_btns()
 
     return text, kbds
 
 
-async def get_menu_content(
-        menu_name: str,
-        session: AsyncSession = None,
-        question_id: Optional[int] = None,
-        state=None):
-    if menu_name == 'program':
-        # О программе опеки (с кнопками обратной связи и "Оставить отзыв о боте"
-        return await program()
-    elif menu_name == 'not_quiz':
-        # Тоже рассказать о программе опеки, но поменять текст сообщения
-        pass
+async def contacts():
+    """
+    Для страницы с контактной информацией о менеджере
+    :return:
+    """
+    text = f'Чтобы узнать больше о программе опекунства, ' \
+           'Вы можете связаться с нашим сотрудником: \n\n' \
+           f'  👤  {os.getenv("MANAGER_NAME")}\n' \
+           f'  📩  E-mail: {os.getenv("MANAGER_EMAIL")}\n' \
+           f'  ☎  Телефон: {os.getenv("MANAGER_PHONE")}'
+
+    kbds = get_contacts_btns()
+    return text, kbds

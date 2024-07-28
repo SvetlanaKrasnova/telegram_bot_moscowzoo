@@ -35,7 +35,6 @@ async def recipes(message: Message, bot: Bot):
     builder.add(types.KeyboardButton(text='Удалить вопрос'))
     builder.add(types.KeyboardButton(text='Добавить вопрос'))
     builder.add(types.KeyboardButton(text='Показать отзывы'))
-    builder.add(types.KeyboardButton(text='Загрузить фотографию для викторины'))
     builder.adjust(1)
 
     await message.answer(f"Что вы хотите сделать?", reply_markup=builder.as_markup(resize_keyboard=True))

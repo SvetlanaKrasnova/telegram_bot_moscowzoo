@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 class MenuCallBack(CallbackData, prefix="menu"):
-    menu_name: str
+    menu_name: str = 'start_page'
     user_select: Optional[int] = Field(default=0)
     question_id: Optional[int] = 0  # текущий номер вопроса из questions с которым работаем
 
@@ -21,13 +21,13 @@ def get_user_main_btns():
     keyboard = InlineKeyboardBuilder()
     btns = {
         "Начать викторину 🦁": "quiz",
-        "В другой раз 🐥": "not_quiz"
+        "Узнать сразу 🐥": "program"
     }
     for text, menu_name in btns.items():
         keyboard.add(InlineKeyboardButton(text=text,
                                           callback_data=MenuCallBack(menu_name=menu_name).pack()))
 
-    return keyboard.adjust(*(1,)).as_markup()
+    return keyboard.adjust(1).as_markup()
 
 
 def get_user_question_btns(question_id: int, question, menu_main=None):
@@ -46,7 +46,7 @@ def get_user_question_btns(question_id: int, question, menu_main=None):
     return keyboard.adjust(*(1,)).as_markup()
 
 
-def get_result_btns():
+def get_result_btns(result_quiz):
     """
     Кнопки - когда пользователю отображается результат пройденной викторины
     :return:
@@ -60,10 +60,13 @@ def get_result_btns():
         "Связаться с сотрудником": "manager_contact",  # Контактный механизм
     }
     for text, menu_name in btns.items():
-        keyboard.add(InlineKeyboardButton(text=text,
-                                          callback_data=MenuCallBack(menu_name=menu_name).pack()))
-
-    return keyboard.adjust(*(1,)).as_markup()
+        if menu_name == 'send_result':
+            keyboard.add(InlineKeyboardButton(text=text,
+                                              switch_inline_query=f'\n{result_quiz}'))
+        else:
+            keyboard.add(InlineKeyboardButton(text=text,
+                                              callback_data=MenuCallBack(menu_name=menu_name).pack()))
+    return keyboard.adjust(1).as_markup()
 
 
 def get_program_btns():
@@ -73,13 +76,33 @@ def get_program_btns():
     """
     keyboard = InlineKeyboardBuilder()
     btns = {
-        "Попробовать ещё раз? 🙂": "quiz",
+        "В начало 🙂": "restart",
         "Оставить отзыв": "feedback",
-        "Поделиться результатом": "send_result",
-        "Связаться с сотрудником": "manager_contact",
+        "Связаться с сотрудником ☎️": "manager_contact",
+    }
+    for text, menu_name in btns.items():
+        if menu_name == 'send_result': # switch_inline_query
+            keyboard.add(InlineKeyboardButton(text=text,
+                                              switch_inline_query='',
+                                              callback_data=MenuCallBack(menu_name=menu_name).pack()))
+        else:
+            keyboard.add(InlineKeyboardButton(text=text,
+                                              callback_data=MenuCallBack(menu_name=menu_name).pack()))
+
+    return keyboard.adjust(1).as_markup()
+
+def get_contacts_btns():
+    """
+        Кнопки - когда пользовать нажал "Связь с сотрудником"
+        :return:
+        """
+    keyboard = InlineKeyboardBuilder()
+    btns = {
+        "В начало 🙂": "restart",
+        "Оставить отзыв": "feedback",
     }
     for text, menu_name in btns.items():
         keyboard.add(InlineKeyboardButton(text=text,
                                           callback_data=MenuCallBack(menu_name=menu_name).pack()))
 
-    return keyboard.adjust(*(1,)).as_markup()
+    return keyboard.adjust(1).as_markup()
