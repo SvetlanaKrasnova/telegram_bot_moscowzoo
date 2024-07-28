@@ -15,8 +15,7 @@ async def get_questions(session: AsyncSession):
     Получаем все вопросы, которые есть сейчас в базе
     :return:
     """
-    query = select(QuestionsORM)
-    result = await session.execute(query)
+    result = await session.execute(select(QuestionsORM))
     return result.scalars().all()
 
 
@@ -30,13 +29,13 @@ async def get_question(session: AsyncSession, id_question):
     return result.scalar()
 
 
-async def delete_question(session: AsyncSession, question_name: str):
+async def delete_question(session: AsyncSession, id_question):
     """
     Удалить вопрос
     :param session:
     :return:
     """
-    query = delete(QuestionsORM).where(QuestionsORM.question == question_name)
+    query = delete(QuestionsORM).where(QuestionsORM.id == id_question)
     await session.execute(query)
     await session.commit()
 
@@ -59,5 +58,5 @@ async def get_review(session: AsyncSession):
     :param session:
     :return:
     """
-    result = await session.query(ReviewORM).order_by(ReviewORM.id.desc()).limit(10)
+    result = await session.execute(select(ReviewORM).order_by(ReviewORM.id.desc()).limit(10))
     return result.scalars().all()
