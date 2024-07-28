@@ -1,4 +1,6 @@
+import logging
 import json
+import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
@@ -17,6 +19,7 @@ engine = create_engine(f"sqlite:///database_bot.db")
 
 def create_db():
     Base.metadata.create_all(bind=engine)
+    logging.info('База данных создана')
 
 
 @contextmanager
@@ -33,23 +36,23 @@ def session() -> sessionmaker:
         session.close()
 
 
-def add_one(data):
-    with session() as s:
-        s.add(data)
-        s.flush()
-        return data.id
-
-
 def adding_questions():
-    with open('../modul_quiz/questions_db.json', encoding='utf-8') as f:
+    """
+    Добавляем вопросы
+    :return:
+    """
+    with open('modul_quiz/questions_db.json', encoding='utf-8') as f:
         json_data = json.load(f)
 
     for q in json_data['questions']:
-        add_one(QuestionsORM(
-            question=q['question'],
-            answer=json.dumps(q['answer'], ensure_ascii=False)
-        ))
+        with session() as s:
+            s.add(QuestionsORM(
+                question=q['question'],
+                answer=json.dumps(q['answer'], ensure_ascii=False)
+            ))
+    logging.info('Вопросы из "modul_quiz/questions_db.json" добавлены')
 
-
-create_db()
-adding_questions()
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    create_db()
+    adding_questions()
