@@ -18,8 +18,8 @@ bot = Bot(os.getenv('TOKEN'), default=DefaultBotProperties(parse_mode=ParseMode.
 bot.admin_user = json.loads(os.getenv('ADMIN_USER'))
 
 dp = Dispatcher()
-dp.include_router(user_router)
 dp.include_router(admin_router)
+dp.include_router(user_router)
 
 
 async def main() -> None:

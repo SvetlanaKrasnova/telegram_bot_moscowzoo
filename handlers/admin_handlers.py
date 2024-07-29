@@ -1,6 +1,5 @@
 import json
 import logging
-
 from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.fsm.context import FSMContext
@@ -19,11 +18,11 @@ class Requests(StatesGroup):
     get_name_question = State()  # Получить вопрос, который нужно добавить
     get_answer_question = State()
     add_question = State()
-    get_id_question = State() # Получить информацию о вопросе по его id
+    get_id_question = State()  # Получить информацию о вопросе по его id
 
 
 @admin_router.message(Command("admin"))
-async def recipes(message: Message, bot: Bot):
+async def command_admin_handler(message: Message, bot: Bot):
     """
     Обработчик команды /admin
     :param message:
@@ -40,7 +39,7 @@ async def recipes(message: Message, bot: Bot):
     builder.add(types.KeyboardButton(text='Удалить вопрос'))
     builder.add(types.KeyboardButton(text='Добавить вопрос'))
     builder.add(types.KeyboardButton(text='Показать отзывы'))
-    builder.add(types.KeyboardButton(text='Получить информацию о вопросе'))  # TODO
+    builder.add(types.KeyboardButton(text='Получить информацию о вопросе'))
     builder.adjust(1)
 
     await message.answer(f"Что вы хотите сделать?", reply_markup=builder.as_markup(resize_keyboard=True))
@@ -59,7 +58,7 @@ async def text_questions(message: types.Message, bot: Bot, session: AsyncSession
 
 
 @admin_router.message(F.text.lower() == "удалить вопрос")
-async def get_name_question_for_delete(message: types.Message, state: FSMContext, bot: Bot):
+async def get_id_question_for_delete(message: types.Message, state: FSMContext, bot: Bot):
     if not str(message.chat.id) in bot.admin_user:
         await message.answer('У вас нет доступа к этому разделу')
         await state.clear()
@@ -71,12 +70,6 @@ async def get_name_question_for_delete(message: types.Message, state: FSMContext
 
 @admin_router.message(Requests.delete_question)
 async def delete_info_question(message: types.Message, session: AsyncSession, state: FSMContext):
-    """
-    Ожидаем фотографию
-    :param message:
-    :param state:
-    :return:
-    """
     id_question = message.text.lower().strip()
     try:
         await delete_question(session=session, id_question=id_question)
@@ -100,30 +93,15 @@ async def get_name_question_for_add(message: types.Message, bot: Bot, state: FSM
 
 @admin_router.message(Requests.get_name_question)
 async def get_button_question_for_add(message: types.Message, state: FSMContext):
-    """
-
-    :param message:
-    :param session:
-    :param state:
-    :param bot:
-    :return:
-    """
     await state.set_data({'name_question': message.text})
     await message.answer('Введите варианты ответов через запятую.\n'
-                         'Например:\n'
-                         'Красный, Синий, Зеленый')
+                         'Например:')
+    await message.answer('Красный, Синий, Зеленый')
     await state.set_state(Requests.get_answer_question.state)
 
 
 @admin_router.message(Requests.get_answer_question)
 async def get_answer_question_for_add(message: types.Message, state: FSMContext):
-    """
-
-    :param message:
-    :param state:
-    :param bot:
-    :return:
-    """
     await state.update_data({'list_answer': message.text})
     await message.answer('Введите варианты ответов через запятую. Сохраните порядок ответов '
                          'с ранее введенными вариантами ответов\n'
@@ -177,8 +155,12 @@ async def show_reviews(message: types.Message, session: AsyncSession, bot: Bot):
         return
 
     user_reviews = await get_review(session)
-    text = '\n'.join([f'Пользователь: "{review.user}"\nОтзыв: {review.review}' for review in user_reviews])
-    await message.answer(f'Последние 10 отзывов:\n{text}')
+    if user_reviews:
+        text = '\n'.join([f'Пользователь: "{review.user}"\nОтзыв: {review.review}' for review in user_reviews])
+        await message.answer(f'Последние 10 отзывов:\n{text}')
+    else:
+        await message.answer(f'Отзывов пока нет')
+
 
 @admin_router.message(F.text.lower() == "получить информацию о вопросе")
 async def details_question(message: types.Message, bot: Bot, state: FSMContext):
@@ -189,6 +171,7 @@ async def details_question(message: types.Message, bot: Bot, state: FSMContext):
     await message.answer(f'Введите id вопроса:')
     await state.set_state(Requests.get_id_question.state)
 
+
 @admin_router.message(Requests.get_id_question)
 async def show_question_by_id(message: types.Message, session: AsyncSession, state: FSMContext):
     id_question = message.text.strip()
@@ -196,7 +179,7 @@ async def show_question_by_id(message: types.Message, session: AsyncSession, sta
         question = await get_question(session=session, id_question=id_question)
     except Exception as e:
         logging.exception(e)
-        await message.answer(f'Вопрос викторины с id "{id_question}" не найден. Пожалуйста, укажите верный id.')
+        await message.answer(f'Ошибка: Вопрос викторины с id "{id_question}" не найден. Пожалуйста, укажите верный id.')
     else:
         answer = '\n'.join([f'"{k}" - {",".join(v)}' for k, v in json.loads(question.answer).items()])
         await message.answer(f'Информация о вопросе с id "{id_question}":\n'
