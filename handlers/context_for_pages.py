@@ -1,14 +1,18 @@
 import os
-import json
 import random
 from aiogram.types import BufferedInputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.formatting import Bold, as_list, as_section
-from keyboards.inline import get_user_main_btns, get_user_question_btns, get_result_btns, get_program_btns, get_contacts_btns
+from keyboards.inline import *
 from database.orm_requests import *
 
 
 async def get_get_main_menu(full_name):
+    """
+    Контекст для стартовой страницы
+    :param full_name: имя пользователя, который написал боту
+    :return:
+    """
     text = f"Привет, {full_name} 🤗!\nРад тебя видеть! 🙂\n" \
            "Предлагаю тебе пройти викторину \"Какое у вас тотемное животное\".\n" \
            "А потом узнать кое-что интересное и важное😉.\n\n" \
@@ -16,7 +20,7 @@ async def get_get_main_menu(full_name):
 
     kbds = get_user_main_btns()
     image = None
-    image_start_path = os.path.join(os.getcwd(), "files/image_start.png")
+    image_start_path = os.path.join(os.getcwd(), "keyboards/image_start.png")
     if os.path.exists(image_start_path):
         with open(image_start_path, "rb") as image_from_buffer:
             image = BufferedInputFile(image_from_buffer.read(),
@@ -26,12 +30,23 @@ async def get_get_main_menu(full_name):
 
 
 async def questions_page(session: AsyncSession, question_id, state=None):
+    """
+    Модуль викторины.
+    :param session:
+    :param question_id: index из листа questions_id, который отображали в прошлый раз
+    :param state:
+    :return:
+    """
     data = await state.get_data()
-    questions_id = data.get('questions_id')
+    questions_id = data.get('questions_id') # список id случайно выбранных вопросов
 
     if not questions_id:
         # Если ещё нет вопросов - значит только начали
         all_questions = await get_questions(session)
+        if not all_questions:
+            text = 'Модуль с викториной временно не работает. Ведуться работы по его улучшению. 🙂\n'
+            kbds = get_not_quiz_btns()
+            return text, kbds
 
         # Теперь выбираем случайные, чтоб было интереснее (если, конечно в базе их больше, чем нужно)
         if all_questions.__len__() == int(os.getenv('COL_QUESTIONS')) or \
@@ -47,10 +62,9 @@ async def questions_page(session: AsyncSession, question_id, state=None):
     text = f'{question_id + 1}/{os.getenv("COL_QUESTIONS")} {question.question}'  # Тут вопрос из базы
     menu_main = None
 
-    # КнопИ Нужно взять значения из базы
     if question_id + 1 == int(os.getenv('COL_QUESTIONS')):
         # Если сейчас будет последний вопрос:
-        # Поменять level на меню с результатом
+        # Поменять menu_main на меню с результатом
         menu_main = 'show_result'
 
     kbds = get_user_question_btns(question_id=question_id,
@@ -85,6 +99,11 @@ async def plus_points(state: FSMContext, session: AsyncSession, user_select: int
 
 
 async def show_result(state: FSMContext):
+    """
+    Контекст для страницы с отображением результата
+    :param state:
+    :return:
+    """
     data = await state.get_data()
     max_value, result = 0, ''
     for k, v in data['weights'].items():

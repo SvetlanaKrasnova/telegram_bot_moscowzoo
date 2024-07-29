@@ -1,13 +1,9 @@
-import os
 import logging
 from aiogram.types import Message
 from aiogram import Router, types, F
-from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.filters import CommandStart
-from keyboards.inline import MenuCallBack
-from handlers.processing import plus_points, show_result, get_get_main_menu, questions_page, program, contacts
+from handlers.context_for_pages import *
 from database.orm_requests import *
 
 user_router = Router()
@@ -18,7 +14,7 @@ class Menu(StatesGroup):
 
 
 @user_router.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
+async def command_start_handler(message: Message):
     """
     Обработчик кнопки /start
     :param message:
@@ -30,11 +26,13 @@ async def command_start_handler(message: Message) -> None:
     else:
         await message.answer(text, reply_markup=reply_markup)
 
+
 @user_router.callback_query(MenuCallBack.filter(F.menu_name == "restart"))
-async def restart_page(callback: types.CallbackQuery, state: FSMContext) -> None:
+async def restart_page(callback: types.CallbackQuery, state: FSMContext):
     """
     Перезапуск бота вернуться в начало
-    :param message:
+    :param callback:
+    :param state:
     :return:
     """
     await state.clear()
@@ -80,8 +78,6 @@ async def show_result_page(callback: types.CallbackQuery, state: FSMContext):
     """
     Отображает результат викторины
     :param callback:
-    :param callback_data:
-    :param session:
     :param state:
     :return:
     """
@@ -97,8 +93,7 @@ async def show_result_page(callback: types.CallbackQuery, state: FSMContext):
 async def about_program_page(callback: types.CallbackQuery):
     """
     Показывает информацию о программе опеки
-    :param message:
-    :param state:
+    :param callback:
     :return:
     """
     text, reply_markup = await program()
@@ -125,6 +120,7 @@ async def write_feedback(message: Message, state: FSMContext, session: AsyncSess
     Записывает отзыв в базу данных
     :param message:
     :param state:
+    :param session:
     :return:
     """
     await insert_one(session=session,
@@ -138,31 +134,21 @@ async def write_feedback(message: Message, state: FSMContext, session: AsyncSess
 async def contact_page(callback: types.CallbackQuery):
     """
     Связаться с сотрудником для получения подробной информации
-    :param message:
-    :param state:
+    :param callback:
     :return:
     """
     text, reply_markup = await contacts()
+
     try:
         if os.getenv('MANAGER_TELEGRAM_ID'):
-            await callback.message.copy_to(chat_id=int(os.getenv('MANAGER_TELEGRAM_ID')))
+            await callback.message.copy_to(chat_id=int(os.getenv('MANAGER_TELEGRAM_ID')),
+                                           caption=f'{callback.message.caption}\n'
+                                                   f'Пользователь "{callback.message.chat.full_name}"' \
+                                                   f' прошел виктоину и запросил обратную связь.',
+                                           reply_markup=None)
     except Exception as e:
         logging.exception(e)
         logging.warning('Не удалось переслать сообщение менеджеру')
 
     await callback.message.delete()
     await callback.message.answer(text=text, reply_markup=reply_markup)
-
-
-@user_router.callback_query(MenuCallBack.filter())
-async def user_menu(callback: types.CallbackQuery):
-    """
-    Что-то непонятное (введенный текст, картинка...)
-    :param callback:
-    :param callback_data:
-    :param session:
-    :return:
-    """
-    await callback.message.answer(text='Не могу понять, что ты хочешь сделать :( '
-                                       'Пожалуйста, пользуйс только кнопками и инструкциями, которые'
-                                       'я тебе предлагая.')

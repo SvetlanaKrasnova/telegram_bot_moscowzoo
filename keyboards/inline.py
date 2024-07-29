@@ -4,18 +4,18 @@ from pydantic import Field
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from database.models import QuestionsORM
 
 
 class MenuCallBack(CallbackData, prefix="menu"):
     menu_name: str = 'start_page'
-    user_select: Optional[int] = Field(default=0)
+    user_select: Optional[int] = Field(default=0)  # Какую кнопку нажал пользователь (чтобы потом посчитать баллы)
     question_id: Optional[int] = 0  # текущий номер вопроса из questions с которым работаем
 
 
 def get_user_main_btns():
     """
     Это кнопки для самой стартовой страницы
-    :param level:
     :return:
     """
     keyboard = InlineKeyboardBuilder()
@@ -30,10 +30,31 @@ def get_user_main_btns():
     return keyboard.adjust(1).as_markup()
 
 
-def get_user_question_btns(question_id: int, question, menu_main=None):
+def get_not_quiz_btns():
+    """
+    Кнопки, когда база была некорректно развернута и нет вопросов
+    для викторины (модуль с викториной не работает)
+    :return:
+    """
+    keyboard = InlineKeyboardBuilder()
+    btns = {
+        "В начало 🙂": "restart",
+        "Узнать сразу 🐥": "program"
+    }
+    for text, menu_name in btns.items():
+        keyboard.add(InlineKeyboardButton(text=text,
+                                          callback_data=MenuCallBack(menu_name=menu_name).pack()))
+
+    return keyboard.adjust(1).as_markup()
+
+
+def get_user_question_btns(question_id: int, question: QuestionsORM, menu_main: Optional[str] = None):
     """
     Кнопки - варианты ответов на вопрос (для викторины)
-    :param question: вопрос из БД
+    :param question: вопрос из БД, которы нужно отобразить сейчас
+    :param question_id: номер вопроса из спика, который нужно показать в следующий раз
+    :param menu_main: для навигации. Параметр, по которому определяется на какой страницы мы находимся
+    Это index из листа в котором лежат id случайно выбранных вопросов
     :return:
     """
     keyboard = InlineKeyboardBuilder()
@@ -43,12 +64,13 @@ def get_user_question_btns(question_id: int, question, menu_main=None):
                                                                      menu_name=menu_main if menu_main else 'quiz',
                                                                      question_id=question_id + 1).pack()))
 
-    return keyboard.adjust(*(1,)).as_markup()
+    return keyboard.adjust(1).as_markup()
 
 
 def get_result_btns(result_quiz):
     """
     Кнопки - когда пользователю отображается результат пройденной викторины
+    :param result_quiz: результат прохождения викторины
     :return:
     """
     keyboard = InlineKeyboardBuilder()
@@ -81,7 +103,7 @@ def get_program_btns():
         "Связаться с сотрудником ☎️": "manager_contact",
     }
     for text, menu_name in btns.items():
-        if menu_name == 'send_result': # switch_inline_query
+        if menu_name == 'send_result':  # switch_inline_query
             keyboard.add(InlineKeyboardButton(text=text,
                                               switch_inline_query='',
                                               callback_data=MenuCallBack(menu_name=menu_name).pack()))
@@ -91,11 +113,12 @@ def get_program_btns():
 
     return keyboard.adjust(1).as_markup()
 
+
 def get_contacts_btns():
     """
-        Кнопки - когда пользовать нажал "Связь с сотрудником"
-        :return:
-        """
+    Кнопки - когда пользовать нажал "Связь с сотрудником"
+    :return:
+    """
     keyboard = InlineKeyboardBuilder()
     btns = {
         "В начало 🙂": "restart",

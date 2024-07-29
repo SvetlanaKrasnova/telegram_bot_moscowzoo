@@ -11,7 +11,7 @@ from handlers.user_handlers import user_router
 from handlers.admin_handlers import admin_router
 
 load_dotenv()
-from utils.middleware import DataBaseSession
+from database.middleware import DataBaseSession
 from database.engine import session_maker
 
 bot = Bot(os.getenv('TOKEN'), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
