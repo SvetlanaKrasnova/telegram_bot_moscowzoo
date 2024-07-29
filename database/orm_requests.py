@@ -13,6 +13,7 @@ async def insert_one(session: AsyncSession, data):
 async def get_questions(session: AsyncSession):
     """
     Получаем все вопросы, которые есть сейчас в базе
+    :param session:
     :return:
     """
     result = await session.execute(select(QuestionsORM))
@@ -22,6 +23,8 @@ async def get_questions(session: AsyncSession):
 async def get_question(session: AsyncSession, id_question):
     """
     Получаем вопрос по его id
+    :param session:
+    :param id_question: id вопроса из базы
     :return:
     """
     query = select(QuestionsORM).where(QuestionsORM.id == id_question)
@@ -31,25 +34,15 @@ async def get_question(session: AsyncSession, id_question):
 
 async def delete_question(session: AsyncSession, id_question):
     """
-    Удалить вопрос
+    Удалить вопрос по его id
     :param session:
+    :param session:
+    :param id_question: id вопроса из базы
     :return:
     """
     query = delete(QuestionsORM).where(QuestionsORM.id == id_question)
     await session.execute(query)
     await session.commit()
-
-
-async def delete_all_questions(session: AsyncSession, data: List[QuestionsORM]):
-    """
-    Удалить все вопросы
-    :param session:
-    :return:
-    """
-    for q in data:
-        query = delete(QuestionsORM).where(QuestionsORM.question == q.question)
-        await session.execute(query)
-        await session.commit()
 
 
 async def get_review(session: AsyncSession):

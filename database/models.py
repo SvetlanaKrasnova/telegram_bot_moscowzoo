@@ -17,14 +17,6 @@ class QuestionsORM(Base):
                                         comment='Сопостовление вариантов с животными (кому начисляем баллы')
 
 
-class UsersORM(Base):
-    __tablename__ = 'users'
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(Text, nullable=False, comment='Имя пользователя')
-    result: Mapped[str] = mapped_column(Text, nullable=False, comment='Результат прохождения опроса')
-
-
 class ReviewORM(Base):
     __tablename__ = 'review'
 
