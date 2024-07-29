@@ -103,13 +103,8 @@ def get_program_btns():
         "Связаться с сотрудником ☎️": "manager_contact",
     }
     for text, menu_name in btns.items():
-        if menu_name == 'send_result':  # switch_inline_query
-            keyboard.add(InlineKeyboardButton(text=text,
-                                              switch_inline_query='',
-                                              callback_data=MenuCallBack(menu_name=menu_name).pack()))
-        else:
-            keyboard.add(InlineKeyboardButton(text=text,
-                                              callback_data=MenuCallBack(menu_name=menu_name).pack()))
+        keyboard.add(InlineKeyboardButton(text=text,
+                                          callback_data=MenuCallBack(menu_name=menu_name).pack()))
 
     return keyboard.adjust(1).as_markup()
 

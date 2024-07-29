@@ -137,18 +137,17 @@ async def contact_page(callback: types.CallbackQuery):
     :param callback:
     :return:
     """
-    text, reply_markup = await contacts()
-
     try:
         if os.getenv('MANAGER_TELEGRAM_ID'):
             await callback.message.copy_to(chat_id=int(os.getenv('MANAGER_TELEGRAM_ID')),
-                                           caption=f'{callback.message.caption}\n'
-                                                   f'Пользователь "{callback.message.chat.full_name}"' \
-                                                   f' прошел виктоину и запросил обратную связь.',
+                                           caption=f'{callback.message.caption}\n ' \
+                                                   f'Пользователь "{callback.message.chat.full_name}" ' \
+                                                   f'запросил обратную связь.',
                                            reply_markup=None)
     except Exception as e:
         logging.exception(e)
         logging.warning('Не удалось переслать сообщение менеджеру')
 
+    text, reply_markup = await contacts()
     await callback.message.delete()
     await callback.message.answer(text=text, reply_markup=reply_markup)
