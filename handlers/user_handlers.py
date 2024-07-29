@@ -3,7 +3,7 @@ from aiogram.types import Message
 from aiogram import Router, types, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import CommandStart
-from handlers.context_for_pages import *
+from handlers.content_for_pages import *
 from database.orm_requests import *
 
 user_router = Router()
