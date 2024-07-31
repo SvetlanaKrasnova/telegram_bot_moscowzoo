@@ -36,7 +36,7 @@ async def restart_page(callback: types.CallbackQuery, state: FSMContext):
     :return:
     """
     await state.clear()
-    text, reply_markup, image = await get_get_main_menu(callback.message.from_user.full_name)
+    text, reply_markup, image = await get_get_main_menu(callback.message.chat.full_name)
     await callback.message.delete()
     if image:
         await callback.message.answer_photo(image, caption=text, reply_markup=reply_markup)
