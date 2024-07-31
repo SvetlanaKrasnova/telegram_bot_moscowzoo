@@ -9,7 +9,7 @@ from database.orm_requests import *
 
 async def get_get_main_menu(full_name):
     """
-    Контекст для стартовой страницы
+    Контент для стартовой страницы
     :param full_name: имя пользователя, который написал боту
     :return:
     """
@@ -100,7 +100,7 @@ async def plus_points(state: FSMContext, session: AsyncSession, user_select: int
 
 async def show_result(state: FSMContext):
     """
-    Контекст для страницы с отображением результата
+    Контент для страницы с отображением результата
     :param state:
     :return:
     """

@@ -36,7 +36,6 @@ async def delete_question(session: AsyncSession, id_question):
     """
     Удалить вопрос по его id
     :param session:
-    :param session:
     :param id_question: id вопроса из базы
     :return:
     """

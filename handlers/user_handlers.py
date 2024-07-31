@@ -87,6 +87,7 @@ async def show_result_page(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer_photo(image, caption=text, reply_markup=reply_markup)
     else:
         await callback.message.edit_text(text=text, reply_markup=reply_markup)
+    await state.clear()
 
 
 @user_router.callback_query(MenuCallBack.filter(F.menu_name == "program"))
