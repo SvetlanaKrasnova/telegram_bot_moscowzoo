@@ -129,9 +129,9 @@ telegram_bot_moscowzoo/
 ├── handlers/
 │   ├── admin_handlers.py # Описание команд бота для администрирования
 │   ├── content_for_pages.py # Тут происходит формирование контента для "страниц" бота
-│   └── user_handlers.py # Описание команд бота для администрирования
+│   └── user_handlers.py # Обработка команд от пользователя
 ├── keyboards/
-│   ├── image_start.PNG
+│   ├── image_start.PNG # Картинка, которая отображается по приветствию пользователя
 │   └── inline.py # Описание кнопок бота
 ├── modul_quiz/
 │   ├── foto/
